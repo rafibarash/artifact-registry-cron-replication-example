@@ -40,15 +40,11 @@ terraform apply
 
 ### 2. Build and push the container image
 
-Now that Terraform has created the `cron-replicator` Artifact Registry repository, you can build and push the image.
+Now that Terraform has created the `cron-replicator` Artifact Registry repository, you can build and push the image using Google Cloud Build (no local Docker required).
 
 ```bash
-# Configure Docker for Artifact Registry
-gcloud auth configure-docker us-central1-docker.pkg.dev
-
-# Build and push the container
-docker build -t us-central1-docker.pkg.dev/<YOUR_PROJECT_ID>/cron-replicator/replicator:latest .
-docker push us-central1-docker.pkg.dev/<YOUR_PROJECT_ID>/cron-replicator/replicator:latest
+# Submit the build to Cloud Build
+gcloud builds submit --tag <REGION>-docker.pkg.dev/<YOUR_PROJECT_ID>/cron-replicator/replicator:latest .
 ```
 
 

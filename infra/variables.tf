@@ -4,7 +4,7 @@ variable "project_id" {
 }
 
 variable "region" {
-  description = "The GCP region to deploy resources."
+  description = "The GCP region to deploy cron-replication resources."
   type        = string
 }
 
@@ -39,6 +39,7 @@ variable "continue_on_skipped_version" {
 variable "max_version_age_days" {
   description = "If set to > 0, only versions updated/created within the specified number of days will be copied."
   type        = number
+  default     = 0
 }
 
 variable "all_attachments_included" {
