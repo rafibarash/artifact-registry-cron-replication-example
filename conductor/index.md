@@ -9,6 +9,5 @@
 - [Workflow](./workflow.md)
 - [Code Style Guides](./code_styleguides/)
 
-## Management
-- [Tracks Registry](./tracks.md)
-- [Tracks Directory](./tracks/)
+## Plan
+- [Plan](./plan.md)

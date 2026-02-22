@@ -1,0 +1,31 @@
+# Your GCP Project ID
+project_id = ""
+
+# The region for your Cloud Run and Cloud Scheduler
+region = ""
+
+# The source Artifact Registry repository you want to copy FROM
+# Format: projects/PROJECT_ID/locations/LOCATION/repositories/REPO_NAME
+source_repo = ""
+
+# The destination Artifact Registry repositories you want to copy TO
+# Format: ["projects/PROJECT_ID/locations/LOCATION/repositories/REPO_NAME"]
+destination_repos = []
+
+# (Optional) Customize the run schedule (default is once a day)
+# schedule = "12 0 * * *"  # Noon every day
+
+# (Optional) Whether to poll the Copy operation until completion
+# poll_operation = false
+
+# (Optional) Continue copying even if a specific version is skipped due to non-transient errors
+# continue_on_skipped_version = false
+
+# (Optional) If set to > 0, only versions updated/created within the specified number of days will be copied.
+# max_version_age_days = 0
+
+# (Optional) Include all attachments from the source artifact
+# all_attachments_included = false
+
+# (Optional) Exclude all tags from the source artifact
+# all_tags_excluded = false
