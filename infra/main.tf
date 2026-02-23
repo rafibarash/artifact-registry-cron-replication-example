@@ -136,6 +136,7 @@ resource "google_cloud_scheduler_job" "job" {
   depends_on = [google_cloud_run_v2_job_iam_member.invoker_binding]
 }
 
+# Keep outputs which are read by scripts/deploy.sh
 output "artifact_registry_repo_url" {
   description = "The URL of the Artifact Registry repository"
   value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app_repo.repository_id}"
