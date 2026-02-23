@@ -55,69 +55,72 @@ gcloud run jobs execute artifact-registry-cron-replicator --region <REGION>
 
 A GitHub Actions workflow (`.github/workflows/ci.yaml`) is included to run linting (`ruff`) and tests (`pytest`) on every push to `main`.
 
-## Development Guidelines
+## Local Development
 
-### Dependency Management
+### Cloud Run Job
 
 This project uses `requirements.txt` for Python dependencies.
 
-- To install dependencies: `cd app && pip install -r requirements.txt`
+1. Go into the `app` directory.
 
-### Code Quality
+```bash
+cd app
+```
+
+2. Create a virtual environment.
+
+```bash
+python3 -m venv .venv
+```
+
+3. Activate the virtual environment.
+
+```bash
+source .venv/bin/activate
+```
+
+4. Install dependencies.
+
+```bash
+pip3 install -r requirements.txt ruff pytest pytest-cov pytest-asyncio
+```
+
+5. When all done, you can deactivate the virtual environment.
+
+```bash
+deactivate
+```
+
+#### Code Quality
 
 Ensure the code is formatted and linted before committing:
 
 ```bash
-cd app
 ruff check .
 ruff format .
 ```
 
-### Testing
+#### Testing
 
-Tests are located in `app/tests`. We follow a Test Driven Development (TDD) approach.
-To run tests:
+We follow a Test Driven Development (TDD) approach. To run tests:
 
 ```bash
-cd app
 pytest
 ```
 
-### Maintenance & Synchronization
+#### Run server locally
 
-If you make any changes to environment variables, requirements, or Terraform variables, you **must** update:
+Make sure that desired env vars are set either explicitely or via a .env file:
 
-1. This `README.md`
-2. `infra/terraform.tfvars.example` (Source of truth for Terraform input values)
+```bash
+export SOURCE_REPOSITORY="projects/..."
+export DESTINATION_REPOSITORIES='["projects/..."]'
+export POLL_OPERATION="false"
+export COPY_CONTINUE_ON_SKIPPED_VERSION="false"
+export COPY_MAX_VERSION_AGE_DAYS="0"
+export COPY_ALL_ATTACHMENTS_INCLUDED="false"
+export COPY_ALL_TAGS_EXCLUDED="false"
+export DRY_RUN="true"
 
-### Local Development
-
-If you wish to run the FastAPI app locally:
-
-1. Create and activate a virtual environment:
-
-   ```bash
-   cd app
-   python3 -m venv .venv
-   source .venv/bin/activate
-   ```
-
-2. Install dependencies:
-
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. Set your ADC credentials locally:
-
-   ```bash
-   gcloud auth application-default login
-   ```
-
-4. Run the script (Requires Environment Variables `SOURCE_REPOSITORY` and `DESTINATION_REPOSITORIES` to be exported):
-
-   ```bash
-   export SOURCE_REPOSITORY="projects/..."
-   export DESTINATION_REPOSITORIES='["projects/..."]'
-   python main.py
-   ```
+uvicorn main:app --reload
+```
