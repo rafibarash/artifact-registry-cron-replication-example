@@ -120,6 +120,7 @@ resource "google_cloud_run_v2_job_iam_member" "invoker_binding" {
 
 resource "google_cloud_scheduler_job" "job" {
   name             = "trigger-ar-cron-replication"
+  region           = var.region
   description      = "Trigger the replication job on a schedule"
   schedule         = var.schedule
   time_zone        = "Etc/UTC"
