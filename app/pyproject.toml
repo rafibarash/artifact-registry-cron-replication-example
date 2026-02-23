@@ -1,7 +1,7 @@
 [project]
 name = "artifact-registry-cron-replication"
 version = "0.1.0"
-description = "Add your description here"
+description = "A Cloud Run job for cron-copying Artifact Registry repositories to keep them in sync"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
