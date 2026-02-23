@@ -9,11 +9,12 @@ class Settings(BaseSettings):
     destination_repositories: list[str]
 
     # Optional parameters and behavior overrides
-    copy_continue_on_skipped: bool = True
-    copy_max_version_age_days: int | None = 14
-    copy_all_attachments: bool = True
+    copy_continue_on_skipped: bool = False
+    copy_max_version_age_days: int = 0
+    copy_all_attachments: bool = False
     copy_all_tags_excluded: bool = False
     poll_operation: bool = False
+    dry_run: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",
