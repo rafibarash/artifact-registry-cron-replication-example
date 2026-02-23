@@ -31,18 +31,13 @@ async def run_copy_job() -> CopyResponse:
     operations = []
     errors = []
 
-    dest_len = len(settings.destination_repositories)
-    logger.info(
-        f"Triggering copy from {settings.source_repository} to {dest_len} destinations"
-    )
-
     for dest in settings.destination_repositories:
         try:
             result = await client.copy_repository(dest)
             operations.append(result)
-            logger.info(f"Triggered copy to {dest}: Operation {result.get('name')}")
+            logger.info(f"Triggered copy from {settings.source_repository} to {dest}: Operation {result.get('name')}")
         except (httpx.HTTPError, Exception) as e:
-            error_msg = f"Error triggering copy to {dest}: {e}"
+            error_msg = f"Error triggering copy from {settings.source_repository} to {dest}: {e}"
             logger.error(error_msg)
             errors.append(error_msg)
 

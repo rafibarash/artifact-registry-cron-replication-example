@@ -1,7 +1,7 @@
 # Your GCP Project ID
 project_id = ""
 
-# The region for your Cloud Run and Cloud Scheduler
+# The region for your replicator resources (Cloud Scheduler, Cloud Run, Artifact Registry)
 region = ""
 
 # The source Artifact Registry repository you want to copy FROM
