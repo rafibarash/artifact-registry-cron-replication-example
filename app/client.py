@@ -25,6 +25,7 @@ class CopyRepositoryClient:
 
         payload = {
             "sourceRepository": self.settings.source_repository,
+            "destinationRepository": destination,
             "behavior": {
                 "continueOnSkippedVersion": self.settings.copy_continue_on_skipped,
                 "maxVersionAgeDays": self.settings.copy_max_version_age_days,
