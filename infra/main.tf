@@ -7,11 +7,6 @@ terraform {
   }
 }
 
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
@@ -23,6 +18,7 @@ resource "google_project_service" "apis" {
 }
 
 resource "google_artifact_registry_repository" "app_repo" {
+  project       = var.project_id
   location      = var.region
   repository_id = "cron-replicator"
   description   = "Docker repo for the artifact registry cron replicator app"
@@ -35,7 +31,7 @@ resource "google_service_account" "runner" {
   display_name = "AR Cron Replicator Service Account"
 }
 
-# Grant Cloud Run SA read permissions to Source Repository
+# Grant replicator SA read permissions to Source Repository
 resource "google_artifact_registry_repository_iam_member" "source_reader" {
   project    = split("/", var.source_repo)[1]
   location   = split("/", var.source_repo)[3]
@@ -44,7 +40,7 @@ resource "google_artifact_registry_repository_iam_member" "source_reader" {
   member     = "serviceAccount:${google_service_account.runner.email}"
 }
 
-# Grant Cloud Run SA writer permissions to Destination Repositories
+# Grant replicator SA writer permissions to Destination Repositories
 resource "google_artifact_registry_repository_iam_member" "dest_writer" {
   for_each   = toset(var.destination_repos)
   project    = split("/", each.value)[1]
@@ -56,6 +52,7 @@ resource "google_artifact_registry_repository_iam_member" "dest_writer" {
 
 resource "google_cloud_run_v2_job" "default" {
   name     = "artifact-registry-cron-replicator"
+  project  = var.project_id
   location = var.region
 
   template {
@@ -111,15 +108,16 @@ resource "google_service_account" "invoker" {
 }
 
 resource "google_cloud_run_v2_job_iam_member" "invoker_binding" {
-  project  = google_cloud_run_v2_job.default.project
-  location = google_cloud_run_v2_job.default.location
   name     = google_cloud_run_v2_job.default.name
+  project  = var.project_id
+  location = var.region
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.invoker.email}"
 }
 
 resource "google_cloud_scheduler_job" "job" {
   name             = "trigger-ar-cron-replication"
+  project          = var.project_id
   region           = var.region
   description      = "Trigger the replication job on a schedule"
   schedule         = var.schedule
