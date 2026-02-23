@@ -54,3 +54,9 @@ variable "all_tags_excluded" {
   default     = false
 }
 
+variable "dry_run" {
+  description = "Whether to run in dry run mode"
+  type        = bool
+  default     = false
+}
+

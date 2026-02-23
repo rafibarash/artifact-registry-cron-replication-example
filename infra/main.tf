@@ -92,6 +92,10 @@ resource "google_cloud_run_v2_job" "default" {
           name  = "COPY_ALL_TAGS_EXCLUDED"
           value = tostring(var.all_tags_excluded)
         }
+        env {
+          name  = "DRY_RUN"
+          value = tostring(var.dry_run)
+        }
       }
     }
   }
