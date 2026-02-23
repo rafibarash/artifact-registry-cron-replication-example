@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import sys
 from typing import Any
 
 import httpx
@@ -8,10 +10,8 @@ from pydantic import BaseModel
 from client import CopyRepositoryClient
 from config import get_settings
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 app = FastAPI(title="Artifact Registry Cron Replicator")
+logger = logging.getLogger(__name__)
 
 
 class CopyResponse(BaseModel):
@@ -28,7 +28,6 @@ async def trigger_copy():
 async def run_copy_job() -> CopyResponse:
     settings = get_settings()
     client = CopyRepositoryClient(settings)
-
     operations = []
     errors = []
 
@@ -42,27 +41,16 @@ async def run_copy_job() -> CopyResponse:
             result = await client.copy_repository(dest)
             operations.append(result)
             logger.info(f"Triggered copy to {dest}: Operation {result.get('name')}")
-        except httpx.HTTPError as e:
-            error_msg = f"HTTP error triggering copy to {dest}: {str(e)}"
-            logger.error(error_msg)
-            errors.append(error_msg)
-        except Exception as e:
-            error_msg = f"Unexpected error triggering copy to {dest}: {str(e)}"
+        except (httpx.HTTPError, Exception) as e:
+            error_msg = f"Error triggering copy to {dest}: {e}"
             logger.error(error_msg)
             errors.append(error_msg)
 
     if errors and not operations:
-        # If all failed, for the script we might want to exit non-zero,
-        # but for now we'll just return the response and log.
-        # When running as a script, we can check this response.
-        if __name__ == "__main__":
-            logger.error("All copy operations failed")
-            # We could sys.exit(1) here if desired, but let's allow the caller to decide.
-        else:
-             raise HTTPException(
-                status_code=500,
-                detail={"message": "All copy operations failed", "errors": errors},
-            )
+        raise HTTPException(
+            status_code=500,
+            detail={"message": "All copy operations failed", "errors": errors},
+        )
 
     return CopyResponse(
         message="Copy operations triggered", operations=operations, errors=errors
@@ -70,15 +58,11 @@ async def run_copy_job() -> CopyResponse:
 
 
 if __name__ == "__main__":
-    import asyncio
-    import sys
-
+    logging.basicConfig(level=logging.INFO)
     try:
         result = asyncio.run(run_copy_job())
-        # If run as script, we might want to exit with error if all failed
         if result.errors and not result.operations:
-             sys.exit(1)
-    except Exception as e:
+            sys.exit(1)
+    except Exception:
         logger.exception("Job failed with unexpected error")
         sys.exit(1)
-

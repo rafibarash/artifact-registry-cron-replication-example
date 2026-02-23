@@ -12,7 +12,6 @@ provider "google" {
   region  = var.region
 }
 
-# Enable Required APIs
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com",
@@ -23,7 +22,6 @@ resource "google_project_service" "apis" {
   disable_on_destroy = false
 }
 
-# Artifact Registry to hold the Cloud Run container image
 resource "google_artifact_registry_repository" "app_repo" {
   location      = var.region
   repository_id = "cron-replicator"
@@ -32,23 +30,30 @@ resource "google_artifact_registry_repository" "app_repo" {
   depends_on    = [google_project_service.apis]
 }
 
-# Cloud Run Service Account
 resource "google_service_account" "runner" {
   account_id   = "ar-cron-replicator"
   display_name = "AR Cron Replicator Service Account"
 }
 
-# Grant Cloud Run SA read/write permissions to Artifact Registry
-# Warning: Roles may need adjusting if cross-project copying is required.
-resource "google_project_iam_member" "ar_writer" {
-  project = var.project_id
-  role    = "roles/artifactregistry.repoAdmin"
-  member  = "serviceAccount:${google_service_account.runner.email}"
+# Grant Cloud Run SA read permissions to Source Repository
+resource "google_artifact_registry_repository_iam_member" "source_reader" {
+  project    = split("/", var.source_repo)[1]
+  location   = split("/", var.source_repo)[3]
+  repository = split("/", var.source_repo)[5]
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${google_service_account.runner.email}"
 }
 
-# Cloud Run Service (Assumes image is built and pushed before applying or dynamically passed.
-# For simplicity, using a dummy image initially, which you overwrite in CI/CD or manuall build step).
-# Cloud Run Job
+# Grant Cloud Run SA writer permissions to Destination Repositories
+resource "google_artifact_registry_repository_iam_member" "dest_writer" {
+  for_each   = toset(var.destination_repos)
+  project    = split("/", each.value)[1]
+  location   = split("/", each.value)[3]
+  repository = split("/", each.value)[5]
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.runner.email}"
+}
+
 resource "google_cloud_run_v2_job" "default" {
   name     = "artifact-registry-cron-replicator"
   location = var.region
@@ -58,18 +63,13 @@ resource "google_cloud_run_v2_job" "default" {
       service_account = google_service_account.runner.email
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app_repo.repository_id}/replicator:latest"
-        
+
         env {
           name  = "SOURCE_REPOSITORY"
           value = var.source_repo
         }
         env {
           name  = "DESTINATION_REPOSITORIES"
-          # Convert list to string representation for Python to parse or use just one if logic changes, 
-          # but current logic parses it? No, app usage needs check. 
-          # Config says `destination_repositories: list[str]`. 
-          # Pydantic can parse JSON string or list if env var is properly formatted.
-          # `jsonencode` produces `["a", "b"]` which pydantic should parse as list.
           value = jsonencode(var.destination_repos)
         }
         env {
@@ -99,10 +99,12 @@ resource "google_cloud_run_v2_job" "default" {
       }
     }
   }
-  depends_on = [google_project_iam_member.ar_writer]
+  depends_on = [
+    google_artifact_registry_repository_iam_member.source_reader,
+    google_artifact_registry_repository_iam_member.dest_writer
+  ]
 }
 
-# Cloud Scheduler SA (needs permission to invoke Cloud Run Job)
 resource "google_service_account" "invoker" {
   account_id   = "ar-cron-invoker"
   display_name = "AR Cron Replicator Invoker"
@@ -116,7 +118,6 @@ resource "google_cloud_run_v2_job_iam_member" "invoker_binding" {
   member   = "serviceAccount:${google_service_account.invoker.email}"
 }
 
-# Cloud Scheduler Job
 resource "google_cloud_scheduler_job" "job" {
   name             = "trigger-ar-cron-replication"
   description      = "Trigger the replication job on a schedule"
@@ -127,10 +128,20 @@ resource "google_cloud_scheduler_job" "job" {
   http_target {
     http_method = "POST"
     uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${google_cloud_run_v2_job.default.name}:run"
-    
+
     oauth_token {
       service_account_email = google_service_account.invoker.email
     }
   }
   depends_on = [google_cloud_run_v2_job_iam_member.invoker_binding]
+}
+
+output "artifact_registry_repo_url" {
+  description = "The URL of the Artifact Registry repository"
+  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app_repo.repository_id}"
+}
+
+output "cloud_run_job_name" {
+  description = "Name of the Cloud Run Job"
+  value       = google_cloud_run_v2_job.default.name
 }

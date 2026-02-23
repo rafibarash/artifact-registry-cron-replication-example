@@ -2,14 +2,11 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install uv for dependency management
-RUN pip install --no-cache-dir uv
+# Copy requirements.txt
+COPY requirements.txt .
 
-# Copying pyproject.toml and uv.lock first for caching layers
-COPY pyproject.toml uv.lock ./
-
-# Install dependencies using uv sync
-RUN uv sync --frozen --no-dev
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
@@ -18,4 +15,4 @@ COPY . .
 EXPOSE 8080
 
 # Command to run uvicorn on port 8080 (Cloud Run expected port)
-CMD ["uv", "run", "python", "main.py"]
+CMD ["python", "main.py"]

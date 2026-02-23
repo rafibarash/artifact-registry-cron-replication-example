@@ -19,9 +19,9 @@ class CopyRepositoryClient:
         )
         credentials.refresh(Request())
 
-        # Build AR API endpoint URL
-        # e.g., POST https://artifactregistry.googleapis.com/v1/projects/my-project/locations/us-central1/repositories/my-repo:copyRepository
-        api_url = f"https://artifactregistry.googleapis.com/v1/{destination}:copyRepository"
+        api_url = (
+            f"https://artifactregistry.googleapis.com/v1/{destination}:copyRepository"
+        )
 
         payload = {
             "sourceRepository": self.settings.source_repository,
@@ -34,9 +34,7 @@ class CopyRepositoryClient:
         }
 
         if self.settings.dry_run:
-            logger.info("DRY RUN MODE ENABLED")
-            logger.info(f"Would trigger copy to {destination} with payload: {payload}")
-            logger.info(f"API URL: {api_url}")
+            logger.info(f"DRY RUN: copy to {destination} with payload: {payload}")
             return {"name": "operations/dry-run", "done": True}
 
         headers = {

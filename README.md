@@ -10,12 +10,6 @@ This repository provides a lightweight Cloud Run application and Terraform confi
 - `infra/`: Contains the Terraform infrastructure-as-code files.
 - `app/Dockerfile`: Used for building the Cloud Run container.
 
-## Workflow
-
-1. **Fork this repository** to your own GitHub account / organization.
-2. **Configure Terraform** variables to match your environment.
-3. **Deploy** using the provided instructions, which will take less than 10 minutes.
-
 ## Prerequisites
 - Google Cloud Project with Billing enabled.
 - `gcloud` CLI installed and authenticated.
@@ -24,60 +18,39 @@ This repository provides a lightweight Cloud Run application and Terraform confi
 
 ## Setup Instructions
 
-### 1. Deploy Infrastructure via Terraform
+### 1. Configure Prerequisites
+Ensure you have `gcloud` and `terraform` installed and authenticated.
 
-Terraform will create the required Artifact Registry repository, the Cloud Run service, and the Cloud Scheduler job. Note: The initial Cloud Run deployment might fail if the container image isn't pushed yet, which is expected.
-
+### 2. Configure Variables
+Copy the example variables file and populate it with your values:
 ```bash
-cd infra/
-
-# Initialize Terraform plugins
-terraform init
-
-# Copy the example variables file
+cd infra
 cp terraform.tfvars.example terraform.tfvars
-
-# Open terraform.tfvars in your editor and configure your repositories
-# e.g., using nano or vim:
-# nano terraform.tfvars
-
-# Review and apply the configuration
-terraform plan
-terraform apply
+# Edit terraform.tfvars
 ```
 
-### 2. Build and push the container image
-
-Now that Terraform has created the `cron-replicator` Artifact Registry repository, you can build and push the image using Google Cloud Build (no local Docker required).
-
+### 3. Deploy
+Run the deployment script, which handles infrastructure provisioning and image building:
 ```bash
-# Build and push the replicator image.
-gcloud builds submit --tag <REGION>-docker.pkg.dev/<YOUR_PROJECT_ID>/cron-replicator/replicator:latest app/
-
-# Update the Cloud Run service to use the new image.
-gcloud run services update artifact-registry-cron-replicator \
-  --region <REGION> \
-  --image <REGION>-docker.pkg.dev/<YOUR_PROJECT_ID>/cron-replicator/replicator:latest
-```
-
-### 3. Trigger Cloud Run Deployment (If initial failed)
-
-If the first Terraform apply failed to deploy the Cloud Run Job because the image was missing, simply run `terraform apply` again now that the image is pushed.
-
-```bash
-cd infra/
-terraform apply
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh
 ```
 
 ### 4. Verification
-Once deployed, you can navigate to Cloud Scheduler in the GCP Console and click **Force Run** on the `trigger-ar-cron-replication` job.
-
-Alternatively, you can manually trigger the Cloud Run Job:
+Once deployed, the script will output the Cloud Scheduler job status. You can also manually trigger the job via the Cloud Console or CLI:
 ```bash
 gcloud run jobs execute artifact-registry-cron-replicator --region <REGION>
 ```
 
-Check the Cloud Run Job execution logs to ensure the replication triggered successfully and the job exited with a success status.
+## Security Considerations
+
+- **IAM Permissions**: The Terraform configuration currently grants `roles/artifactregistry.repoAdmin` to the Cloud Run Service Account at the **Project Level**.
+    - This is done for simplicity to allow copying to any destination repository in the project.
+    - **Recommendation**: For production environments, scope this permission to specific destination repositories using `google_artifact_registry_repository_iam_member`.
+- **Secrets**: Ensure `terraform.tfvars` is NOT committed to version control (it is ignored by default).
+
+## CI/CD
+A GitHub Actions workflow (`.github/workflows/ci.yaml`) is included to run linting (`ruff`) and tests (`pytest`) on every push to `main`.
 
 ## Development Guidelines
 
