@@ -115,3 +115,51 @@ async def test_copy_repository_dry_run(mock_google_auth, mock_settings):
 
             # Verify NO HTTP request was made
             mock_http_client.post.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch("client.google.auth.default")
+@patch("client.asyncio.sleep", new_callable=AsyncMock)
+async def test_copy_repository_with_polling(
+    mock_sleep, mock_google_auth, mock_settings
+):
+    mock_credentials = MagicMock()
+    mock_credentials.token = "fake-token"
+    mock_google_auth.return_value = (mock_credentials, "my-project")
+
+    mock_settings.poll_operation = True
+
+    with patch("client.httpx.AsyncClient") as mock_http_client_class:
+        mock_http_client = AsyncMock()
+        mock_http_client_class.return_value.__aenter__.return_value = mock_http_client
+
+        mock_post_response = MagicMock()
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {
+            "name": "operations/test",
+            "done": False,
+        }
+        mock_http_client.post.return_value = mock_post_response
+
+        mock_get_response_1 = MagicMock()
+        mock_get_response_1.status_code = 200
+        mock_get_response_1.json.return_value = {
+            "name": "operations/test",
+            "done": False,
+        }
+
+        mock_get_response_2 = MagicMock()
+        mock_get_response_2.status_code = 200
+        mock_get_response_2.json.return_value = {
+            "name": "operations/test",
+            "done": True,
+        }
+
+        mock_http_client.get.side_effect = [mock_get_response_1, mock_get_response_2]
+
+        client = CopyRepositoryClient(mock_settings)
+        result = await client.copy_repository("projects/p/locations/l/repositories/d")
+
+        assert result.get("done") is True
+        assert mock_http_client.get.call_count == 2
+        assert mock_sleep.call_count == 2

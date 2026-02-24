@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import google.auth
@@ -46,4 +47,22 @@ class CopyRepositoryClient:
         async with httpx.AsyncClient() as client:
             response = await client.post(api_url, json=payload, headers=headers)
             response.raise_for_status()
-            return response.json()
+            op = response.json()
+            logger.info(
+                f"Triggered copy from {self.settings.source_repository} to "
+                f"{destination}: Operation {op.get('name')}"
+            )
+
+            if self.settings.poll_operation:
+                op_name = op.get("name")
+                if op_name:
+                    poll_url = f"https://artifactregistry.googleapis.com/v1/{op_name}"
+                    # Poll every 15s until done
+                    while not op.get("done"):
+                        logger.info(f"Polling operation {op_name}...")
+                        await asyncio.sleep(15)
+                        poll_response = await client.get(poll_url, headers=headers)
+                        poll_response.raise_for_status()
+                        op = poll_response.json()
+
+            return op

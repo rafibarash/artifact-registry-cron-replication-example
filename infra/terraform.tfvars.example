@@ -16,7 +16,7 @@ destination_repos = []
 dry_run = true
 
 # (Optional) Customize the run schedule. If ommitted, the job will have to be triggered manually.
-# schedule = "12 0 * * *"  # Noon every day
+# schedule = "0 12 * * *"  # Noon every day
 
 # (Optional) Whether to poll the Copy operation until completion
 # poll_operation = false

@@ -35,10 +35,6 @@ async def run_copy_job() -> CopyResponse:
         try:
             result = await client.copy_repository(dest)
             operations.append(result)
-            logger.info(
-                f"Triggered copy from {settings.source_repository} to {dest}: "
-                f"Operation {result.get('name')}"
-            )
         except (httpx.HTTPError, Exception) as e:
             error_msg = (
                 f"Error triggering copy from {settings.source_repository} "
