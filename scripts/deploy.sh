@@ -18,7 +18,7 @@ cd infra
 terraform init
 
 echo "Creating Artifact Registry Repository..."
-terraform apply -target=google_artifact_registry_repository.app_repo -auto-approve
+terraform apply -target=google_artifact_registry_repository.app_repo
 
 echo "Getting Repository URL..."
 REPO_URL=$(terraform output -raw artifact_registry_repo_url 2>/dev/null || echo "")
@@ -36,6 +36,6 @@ gcloud builds submit --tag "${IMAGE_TAG}" .
 
 echo "Deploying remaining infrastructure..."
 cd ../infra
-terraform apply -auto-approve
+terraform apply
 
 echo "Deployment Complete!"

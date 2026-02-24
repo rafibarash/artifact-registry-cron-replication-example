@@ -19,9 +19,9 @@ variable "destination_repos" {
 }
 
 variable "schedule" {
-  description = "Cron schedule for triggering replication"
+  description = "Cron schedule for triggering the copy job. If omitted, the job will have to be triggered manually."
   type        = string
-  default     = "12 * * * *" # Noon every day
+  default     = ""
 }
 
 variable "poll_operation" {

@@ -28,6 +28,7 @@ resource "google_artifact_registry_repository" "app_repo" {
 
 resource "google_service_account" "runner" {
   account_id   = "ar-cron-replicator"
+  project      = var.project_id
   display_name = "AR Cron Replicator Service Account"
 }
 
@@ -104,6 +105,7 @@ resource "google_cloud_run_v2_job" "default" {
 
 resource "google_service_account" "invoker" {
   account_id   = "ar-cron-invoker"
+  project      = var.project_id
   display_name = "AR Cron Replicator Invoker"
 }
 
@@ -116,6 +118,7 @@ resource "google_cloud_run_v2_job_iam_member" "invoker_binding" {
 }
 
 resource "google_cloud_scheduler_job" "job" {
+  count            = var.schedule != "" ? 1 : 0
   name             = "trigger-ar-cron-replication"
   project          = var.project_id
   region           = var.region
