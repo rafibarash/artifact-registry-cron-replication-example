@@ -32,3 +32,11 @@ dry_run = true
 
 # (Optional) Exclude all tags from the source artifact
 # all_tags_excluded = false
+
+# (Optional) Whether to disable granting the runner SA reader IAM permission on the source repository.
+# If set to true, you must manually grant the permission.
+# disable_source_repo_reader = false
+
+# (Optional) Execution timeout for the Cloud Run Job. If polling is enabled, this should be longer than the expected copy time.
+# timeout = "600s"
+

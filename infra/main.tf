@@ -34,6 +34,7 @@ resource "google_service_account" "runner" {
 
 # Grant replicator SA read permissions to Source Repository
 resource "google_artifact_registry_repository_iam_member" "source_reader" {
+  count      = var.disable_source_repo_reader ? 0 : 1
   project    = split("/", var.source_repo)[1]
   location   = split("/", var.source_repo)[3]
   repository = split("/", var.source_repo)[5]
@@ -59,6 +60,7 @@ resource "google_cloud_run_v2_job" "default" {
   template {
     template {
       service_account = google_service_account.runner.email
+      timeout         = var.timeout
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.app_repo.repository_id}/replicator:latest"
 

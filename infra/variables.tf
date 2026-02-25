@@ -60,3 +60,15 @@ variable "dry_run" {
   default     = false
 }
 
+variable "disable_source_repo_reader" {
+  description = "Whether to disable granting the runner SA reader IAM permission on the source repository. If set to true, you must manually grant the permission."
+  type        = bool
+  default     = false
+}
+
+variable "timeout" {
+  description = "Execution timeout for the Cloud Run Job. If polling is enabled, this should be longer than the expected copy time. See https://docs.cloud.google.com/run/docs/configuring/task-timeout"
+  type        = string
+  default     = "600s"
+}
+
