@@ -48,26 +48,25 @@ class CopyRepositoryClient:
             response = await client.post(api_url, json=payload, headers=headers)
             response.raise_for_status()
             op = response.json()
+            op_name = op.get("name")
             logger.info(
                 f"Triggered copy from {self.settings.source_repository} to "
-                f"{destination}: Operation {op.get('name')}"
+                f"{destination}: Operation {op_name}"
             )
+            # Return immediately if not polling.
+            if not self.settings.poll_operation:
+                return op
 
-            if self.settings.poll_operation:
-                op_name = op.get("name")
-                if op_name:
-                    poll_url = f"https://artifactregistry.googleapis.com/v1/{op_name}"
-                    poll_interval = 5.0
-                    poll_max_interval = 60.0
-                    # Poll starting at 5s with exponential backoff up to 60s
-                    while not op.get("done"):
-                        logger.info(
-                            f"Polling operation {op_name} in {poll_interval}s..."
-                        )
-                        await asyncio.sleep(poll_interval)
-                        poll_response = await client.get(poll_url, headers=headers)
-                        poll_response.raise_for_status()
-                        op = poll_response.json()
-                        poll_interval = min(poll_max_interval, poll_interval * 2.0)
-
+            # Poll the operation until completion, with exponential backoff.
+            poll_url = f"https://artifactregistry.googleapis.com/v1/{op_name}"
+            poll_interval = 5.0
+            poll_max_interval = 60.0
+            while not op.get("done"):
+                logger.info(f"Polling operation {op_name} in {poll_interval}s...")
+                await asyncio.sleep(poll_interval)
+                poll_response = await client.get(poll_url, headers=headers)
+                poll_response.raise_for_status()
+                op = poll_response.json()
+                poll_interval = min(poll_max_interval, poll_interval * 2.0)
+            logger.info(f"Copy operation {op_name} completed: {op}")
             return op

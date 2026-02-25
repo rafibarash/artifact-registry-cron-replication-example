@@ -3,7 +3,6 @@ import logging
 import sys
 from typing import Any
 
-import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -31,17 +30,19 @@ async def run_copy_job() -> CopyResponse:
     operations = []
     errors = []
 
-    for dest in settings.destination_repositories:
-        try:
-            result = await client.copy_repository(dest)
-            operations.append(result)
-        except (httpx.HTTPError, Exception) as e:
+    tasks = [client.copy_repository(dest) for dest in settings.destination_repositories]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    for dest, result in zip(settings.destination_repositories, results, strict=False):
+        if isinstance(result, Exception):
             error_msg = (
                 f"Error triggering copy from {settings.source_repository} "
-                f"to {dest}: {e}"
+                f"to {dest}: {result}"
             )
             logger.error(error_msg)
             errors.append(error_msg)
+        else:
+            operations.append(result)
 
     if errors and not operations:
         raise HTTPException(

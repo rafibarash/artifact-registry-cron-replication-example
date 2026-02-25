@@ -18,6 +18,12 @@ variable "destination_repos" {
   type        = list(string)
 }
 
+variable "dry_run" {
+  description = "Run in dry run mode"
+  type        = bool
+  default     = false
+}
+
 variable "schedule" {
   description = "Cron schedule for triggering the copy job. If omitted, the job will have to be triggered manually."
   type        = string
@@ -26,6 +32,18 @@ variable "schedule" {
 
 variable "poll_operation" {
   description = "Poll the copy operation(s) until completion"
+  type        = bool
+  default     = false
+}
+
+variable "timeout" {
+  description = "Execution timeout for the Cloud Run Job. If polling is enabled, this should be longer than the expected copy time. See https://docs.cloud.google.com/run/docs/configuring/task-timeout"
+  type        = string
+  default     = "600s"
+}
+
+variable "disable_source_repo_reader" {
+  description = "Whether to disable granting the runner SA reader IAM permission on the source repository. If set to true, you must manually grant the permission."
   type        = bool
   default     = false
 }
@@ -52,23 +70,5 @@ variable "all_tags_excluded" {
   description = "Exclude all tags"
   type        = bool
   default     = false
-}
-
-variable "dry_run" {
-  description = "Run in dry run mode"
-  type        = bool
-  default     = false
-}
-
-variable "disable_source_repo_reader" {
-  description = "Whether to disable granting the runner SA reader IAM permission on the source repository. If set to true, you must manually grant the permission."
-  type        = bool
-  default     = false
-}
-
-variable "timeout" {
-  description = "Execution timeout for the Cloud Run Job. If polling is enabled, this should be longer than the expected copy time. See https://docs.cloud.google.com/run/docs/configuring/task-timeout"
-  type        = string
-  default     = "600s"
 }
 
