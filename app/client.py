@@ -60,14 +60,14 @@ class CopyRepositoryClient:
             # Poll the operation until completion, with exponential backoff.
             poll_url = f"https://artifactregistry.googleapis.com/v1/{op_name}"
             poll_interval = 5.0
-            poll_max_interval = 60.0
+            poll_max_interval = 30.0
             logger.info(f"Polling operation {op_name}...")
             while not op.get("done"):
                 await asyncio.sleep(poll_interval)
                 poll_response = await client.get(poll_url, headers=headers)
                 poll_response.raise_for_status()
                 op = poll_response.json()
-                poll_interval = min(poll_max_interval, poll_interval * 2.0)
+                poll_interval = min(poll_max_interval, poll_interval * 1.5)
 
             logger.info(f"Copy operation {op_name} completed: {op}")
             if op.get("error"):
