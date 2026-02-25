@@ -59,7 +59,6 @@ async def test_copy_endpoint_failure(monkeypatch):
     assert response.status_code == 502
 
 
-
 @pytest.mark.asyncio
 async def test_copy_endpoint_http_failure(monkeypatch):
     from config import Settings
@@ -74,10 +73,9 @@ async def test_copy_endpoint_http_failure(monkeypatch):
     async def mock_copy_repository_mixed(self, destination: str):
         if destination == "dest1":
             from httpx import HTTPStatusError, Request, Response
+
             raise HTTPStatusError(
-                "403 Forbidden",
-                request=Request("POST", ""),
-                response=Response(403)
+                "403 Forbidden", request=Request("POST", ""), response=Response(403)
             )
         return {"name": f"operations/{destination}", "done": True}
 

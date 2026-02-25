@@ -42,7 +42,7 @@ async def run_copy_job() -> CopyResponse:
             )
             logger.error(error_msg)
             errors.append(error_msg)
-            
+
             if isinstance(e, ValueError):
                 status_codes.append(502)
             else:
@@ -59,8 +59,18 @@ async def run_copy_job() -> CopyResponse:
             detail={"message": "One or more copy operations failed", "errors": errors},
         )
 
+    if settings.poll_operation:
+        logger.info("All copy operations successfully completed")
+        return CopyResponse(
+            message="All copy operations successfully completed",
+            operations=operations,
+            errors=errors,
+        )
+    logger.info("All copy operations successfully triggered")
     return CopyResponse(
-        message="Copy operations triggered", operations=operations, errors=errors
+        message="All copy operations successfully triggered",
+        operations=operations,
+        errors=errors,
     )
 
 
