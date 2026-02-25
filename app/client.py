@@ -57,12 +57,17 @@ class CopyRepositoryClient:
                 op_name = op.get("name")
                 if op_name:
                     poll_url = f"https://artifactregistry.googleapis.com/v1/{op_name}"
-                    # Poll every 15s until done
+                    poll_interval = 5.0
+                    poll_max_interval = 60.0
+                    # Poll starting at 5s with exponential backoff up to 60s
                     while not op.get("done"):
-                        logger.info(f"Polling operation {op_name}...")
-                        await asyncio.sleep(15)
+                        logger.info(
+                            f"Polling operation {op_name} in {poll_interval}s..."
+                        )
+                        await asyncio.sleep(poll_interval)
                         poll_response = await client.get(poll_url, headers=headers)
                         poll_response.raise_for_status()
                         op = poll_response.json()
+                        poll_interval = min(poll_max_interval, poll_interval * 2.0)
 
             return op
