@@ -29,25 +29,34 @@ async def run_copy_job() -> CopyResponse:
     client = CopyRepositoryClient(settings)
     operations = []
     errors = []
+    status_codes = []
 
-    tasks = [client.copy_repository(dest) for dest in settings.destination_repositories]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    for dest, result in zip(settings.destination_repositories, results, strict=False):
-        if isinstance(result, Exception):
+    async def copy(dest: str) -> None:
+        try:
+            result = await client.copy_repository(dest)
+            operations.append(result)
+        except Exception as e:
             error_msg = (
                 f"Error triggering copy from {settings.source_repository} "
-                f"to {dest}: {result}"
+                f"to {dest}: {e}"
             )
             logger.error(error_msg)
             errors.append(error_msg)
-        else:
-            operations.append(result)
+            
+            if isinstance(e, ValueError):
+                status_codes.append(502)
+            else:
+                status_codes.append(500)
 
-    if errors and not operations:
+    # Run copy operations in parallel. Only waits if poll_operation is enabled.
+    tasks = [copy(dest) for dest in settings.destination_repositories]
+    await asyncio.gather(*tasks)
+
+    if errors:
+        final_status = 502 if 502 in status_codes else 500
         raise HTTPException(
-            status_code=500,
-            detail={"message": "All copy operations failed", "errors": errors},
+            status_code=final_status,
+            detail={"message": "One or more copy operations failed", "errors": errors},
         )
 
     return CopyResponse(

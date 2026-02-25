@@ -68,5 +68,9 @@ class CopyRepositoryClient:
                 poll_response.raise_for_status()
                 op = poll_response.json()
                 poll_interval = min(poll_max_interval, poll_interval * 2.0)
+            
             logger.info(f"Copy operation {op_name} completed: {op}")
+            if op.get("error"):
+                raise ValueError(f"Operation {op_name} failed: {op.get('error')}")
+                
             return op
